@@ -6,6 +6,7 @@ import chokidar from "chokidar";
 import path from "node:path";
 
 const WATCH_DIR = "out/";
+const INCLUDE_DIR = "include/";
 const GAME_DIR = "game/";
 const TREE_JSON_PATH = "default.project.json"; 
 
@@ -65,7 +66,6 @@ function getHierarchyForFile(filePath) {
 
         segments.push(cleanFileName);
         const fullHierarchy = [...treePath, ...segments]; 
-        // console.log(`${filePath} logically belongs in ${fullHierarchy} as ${baseType}`);
         return {
             hierarchy : fullHierarchy,
             type : baseType,
@@ -82,7 +82,7 @@ const treeWatcher = chokidar.watch(TREE_JSON_PATH, {
         stabilityThreshold: 100,
         pollInterval: 50,
     },
-})
+});
 
 treeWatcher.on("add", (_path, _stats) => { walk(); });
 treeWatcher.on("change", (_path, _stats) => { walk(); });
@@ -94,7 +94,7 @@ const watcher = chokidar.watch(WATCH_DIR, {
         stabilityThreshold: 100,
         pollInterval: 50,
     },
-});
+}).add(INCLUDE_DIR);
 
 let work = [];
 
