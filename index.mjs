@@ -104,6 +104,8 @@ function handleAdd(filePath) {
     const gameScriptPath = path.join(GAME_DIR, "scripts", hierarchy.join(path.sep) + ".luau");
     const editorScriptPath = path.join("scripts", hierarchy.join(path.sep) + ".luau");
     console.log(`cp ${filePath} ${gameScriptPath}`)
+
+    fs.mkdirSync(path.dirname(gameScriptPath), { recursive: true });
     fs.copyFileSync(filePath, gameScriptPath);
 
     const existingWorkItem = work.find(workItem => workItem.hierarchy.join("/") === hierarchy.join("/"));
