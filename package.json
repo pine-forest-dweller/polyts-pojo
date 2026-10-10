@@ -1,0 +1,17 @@
+{
+  "name": "@polytoria-ts/pojo",
+  "version": "1.0.0",
+  "description": "Synchronization server for Polytoria's Pojo extension.",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "run": "node index.mjs"
+  },
+  "dependencies": {
+    "chokidar": "^5.0.0",
+    "express": "^5.3.0"
+  },
+  "bin": {
+    "pojo": "./index.mjs"
+  }
+}
