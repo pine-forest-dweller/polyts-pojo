@@ -1,6 +1,6 @@
 {
   "name": "@polytoria-ts/pojo",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Synchronization server for Polytoria's Pojo extension.",
   "type": "commonjs",
   "main": "index.js",
