@@ -4,6 +4,10 @@
   "description": "Synchronization server for Polytoria's Pojo extension.",
   "type": "commonjs",
   "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pine-forest-dweller/polyts-pojo.git"
+  },
   "scripts": {
     "run": "node index.mjs"
   },
