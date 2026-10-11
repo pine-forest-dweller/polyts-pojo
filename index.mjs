@@ -5,10 +5,10 @@ import fs from "node:fs";
 import chokidar from "chokidar";
 import path from "node:path";
 
-const WATCH_DIR = "out/";
-const INCLUDE_DIR = "include/";
 const GAME_DIR = "game/";
 const TREE_JSON_PATH = "default.project.json"; 
+
+const WATCH_DIRS = ["out/", "include/", "node_modules/"];
 
 let kvOutToHierarchy = {}
 function walk() {
@@ -40,32 +40,41 @@ function walk() {
     walkChild(tree, []);
     console.log(kvOutToHierarchy)
 }
+walk();
 
 function getHierarchyForFile(filePath) {
     const absPath = path.resolve(filePath);
+
+    if (filePath.includes("flamework.lua")) {
+        console.log("HIT!!!!!");
+    }
 
     const entries = Object.entries(kvOutToHierarchy);
     for (const [diskPath, treePath] of entries) {
         const relativePath = path.relative(diskPath, absPath)
         if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) continue;
         const segments = relativePath.split(path.sep);
+        console.log(segments);
         const fileName = segments.pop(); // distinct from filePath, lacks dir indicators
 
-        let baseType = ""; // "ClientScript" || "ServerScript" || "ModuleScript"
-        let cleanFileName = fileName.split(".")[0];
+        let baseType = "ModuleScript"; // "ClientScript" || "ServerScript" || "ModuleScript"
         if (fileName.endsWith(".server.luau")) {
             baseType = "ServerScript";
         } else if (fileName.endsWith(".client.luau")) {
             baseType = "ClientScript";
-        } else if (fileName.endsWith(".luau")) {
-            baseType = "ModuleScript";
-        } else {
+        } else if (!fileName.endsWith(".luau") && !fileName.endsWith(".lua")) {
             console.error(`${fileName} does not appear to be luau?`)
             continue;
         }
 
-        segments.push(cleanFileName);
+        const cleanFileName = fileName.replace(/(\.(server|client))?\.(luau|lua)$/, "");
+        console.log(`${fileName} -> ${cleanFileName}`)
+        if (cleanFileName !== "init") {
+            segments.push(cleanFileName);
+        }
+
         const fullHierarchy = [...treePath, ...segments]; 
+        console.log(`fullHier = ${fullHierarchy.join(".")}`)
         return {
             hierarchy : fullHierarchy,
             type : baseType,
@@ -76,57 +85,63 @@ function getHierarchyForFile(filePath) {
 }
 
 const treeWatcher = chokidar.watch(TREE_JSON_PATH, {
-    ignoreInitial: false,
-
+    ignoreInitial: true,
     awaitWriteFinish: {
         stabilityThreshold: 100,
         pollInterval: 50,
     },
 });
 
-treeWatcher.on("add", (_path, _stats) => { walk(); });
-treeWatcher.on("change", (_path, _stats) => { walk(); });
+treeWatcher.on("add", (_path, _stats) => {
+    walk();
+    treeWatcher.add(Object.keys(kvOutToHierarchy));
+});
+treeWatcher.on("change", (_path, _stats) => {
+    walk();
+    treeWatcher.add(Object.keys(kvOutToHierarchy));
+});
 
-const watcher = chokidar.watch(WATCH_DIR, {
-    ignored: (path, stats) => stats?.isFile() && !path.endsWith(".luau"),
+const watcher = chokidar.watch(WATCH_DIRS, {
+    ignored: (path, stats) => (stats?.isFile() && !path.endsWith(".luau") && !path.endsWith(".lua")),
     ignoreInitial: false,
     awaitWriteFinish: {
         stabilityThreshold: 100,
         pollInterval: 50,
     },
-}).add(INCLUDE_DIR);
+});
 
 let work = [];
 
 function handleAdd(filePath) {
-    const {hierarchy, type} = getHierarchyForFile(filePath);
+    const hierarchyAndType = getHierarchyForFile(filePath);
+    if (hierarchyAndType === undefined)
+        return;
+    const {hierarchy, type} = hierarchyAndType;
 
     const gameScriptPath = path.join(GAME_DIR, "scripts", hierarchy.join(path.sep) + ".luau");
     const editorScriptPath = path.join("scripts", hierarchy.join(path.sep) + ".luau");
-    console.log(`cp ${filePath} ${gameScriptPath}`)
 
-    fs.mkdirSync(path.dirname(gameScriptPath), { recursive: true });
+    fs.mkdirSync(path.dirname(gameScriptPath), { recursive: true,  });
     fs.copyFileSync(filePath, gameScriptPath);
-
+    
     const existingWorkItem = work.find(workItem => workItem.hierarchy.join("/") === hierarchy.join("/"));
     if (existingWorkItem) return;
 
-    work.push({
+    const workItem = {
         operation: "add",
         hierarchy: hierarchy,
         full_path: editorScriptPath,
         type: type,
-    });
-    console.log(work);
+    };
+    console.log(workItem);
+    work.push(workItem);
 }
 
 watcher.on("add", (filePath, _stats) => {
-    console.log(`+${filePath}`);
     handleAdd(filePath)
 });
 
 watcher.on("change", (filePath, _stats) => {
-    console.log(`~${filePath}`);
     handleAdd(filePath);
 });
 
@@ -143,14 +158,16 @@ function handleUnlink(filePath) {
 }
 
 watcher.on("unlink", (filePath, _stats) => {
-    console.log(`-${filePath}`);
     handleUnlink(filePath);
 });
 
 const app = express();
 app.get("/", (req, res) => {
+    // process shorter paths first, i.e. lower nesting
+    work.sort((a, b) => a.hierarchy.length - b.hierarchy.length);
     res.send(JSON.stringify(work));
     work = [];
+    console.log("Sync complete");
 })
 
 app.listen(8080, "127.0.0.1", () => { console.log("running") });
