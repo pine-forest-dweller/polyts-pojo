@@ -1,12 +1,12 @@
 {
   "name": "@polytoria-ts/pojo",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Synchronization server for Polytoria's Pojo extension.",
   "type": "commonjs",
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pine-forest-dweller/polyts-pojo.git"
+    "url": "git+https://github.com/polytoria-ts/pojo.git"
   },
   "scripts": {
     "run": "node index.mjs"

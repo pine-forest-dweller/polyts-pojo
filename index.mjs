@@ -45,16 +45,11 @@ walk();
 function getHierarchyForFile(filePath) {
     const absPath = path.resolve(filePath);
 
-    if (filePath.includes("flamework.lua")) {
-        console.log("HIT!!!!!");
-    }
-
     const entries = Object.entries(kvOutToHierarchy);
     for (const [diskPath, treePath] of entries) {
         const relativePath = path.relative(diskPath, absPath)
         if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) continue;
         const segments = relativePath.split(path.sep);
-        console.log(segments);
         const fileName = segments.pop(); // distinct from filePath, lacks dir indicators
 
         let baseType = "ModuleScript"; // "ClientScript" || "ServerScript" || "ModuleScript"
@@ -68,13 +63,11 @@ function getHierarchyForFile(filePath) {
         }
 
         const cleanFileName = fileName.replace(/(\.(server|client))?\.(luau|lua)$/, "");
-        console.log(`${fileName} -> ${cleanFileName}`)
         if (cleanFileName !== "init") {
             segments.push(cleanFileName);
         }
 
         const fullHierarchy = [...treePath, ...segments]; 
-        console.log(`fullHier = ${fullHierarchy.join(".")}`)
         return {
             hierarchy : fullHierarchy,
             type : baseType,
@@ -170,4 +163,4 @@ app.get("/", (req, res) => {
     console.log("Sync complete");
 })
 
-app.listen(8080, "127.0.0.1", () => { console.log("running") });
+app.listen(8080, "127.0.0.1", () => { console.log("Running. Waiting for sync.") });
